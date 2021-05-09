@@ -66,14 +66,15 @@ func CreateNewUser(U *models.UserModel) *ResponseModel {
 }
 
 // READ ALL
-func ReadAllUsers(limit int, offset int) []models.UserModel {
+func ReadAllUsers(limit int, offset int) map[string]interface{} {
 	db, err := driver.ConnectToDB()
 	if err != nil {
 		fmt.Println(err.Error())
 		return nil
 	}
 
-	var result []models.UserModel
+	var result = make(map[string]interface{})
+	var returnDatas []models.UserModel
 	items, err := db.Query(`SELECT id, username, password, name FROM users LIMIT ? OFFSET ?`, limit, offset)
 	if err != nil {
 		fmt.Println(err.Error())
@@ -82,6 +83,7 @@ func ReadAllUsers(limit int, offset int) []models.UserModel {
 
 	fmt.Printf("%T\n", items)
 
+	var total int
 	for items.Next() {
 		var each = models.UserModel{}
 		var err = items.Scan(&each.Id, &each.Username, &each.Password, &each.Name)
@@ -91,7 +93,8 @@ func ReadAllUsers(limit int, offset int) []models.UserModel {
 			return nil
 		}
 
-		result = append(result, each)
+		total++
+		returnDatas = append(returnDatas, each)
 	}
 
 	if err = items.Err(); err != nil {
@@ -101,18 +104,22 @@ func ReadAllUsers(limit int, offset int) []models.UserModel {
 
 	defer db.Close()
 
+	result["data"] = returnDatas
+	result["total"] = total
+
 	return result
 }
 
 // READ BY ID
-func ReadUserById(id int) []models.UserModel {
+func ReadUserById(id int) map[string]interface{} {
 	db, err := driver.ConnectToDB()
 	if err != nil {
 		fmt.Println(err.Error())
 		return nil
 	}
 
-	var result []models.UserModel
+	var result = make(map[string]interface{})
+	var returnDatas []models.UserModel
 
 	items, err := db.Query(`SELECT * FROM users WHERE id = ?`, id)
 	if err != nil {
@@ -131,7 +138,7 @@ func ReadUserById(id int) []models.UserModel {
 			return nil
 		}
 
-		result = append(result, each)
+		returnDatas = append(returnDatas, each)
 		if err != nil {
 			fmt.Println(err.Error())
 			return nil
@@ -139,6 +146,8 @@ func ReadUserById(id int) []models.UserModel {
 	}
 
 	defer db.Close()
+
+	result["data"] = returnDatas
 
 	return result
 }
